@@ -1441,9 +1441,8 @@ function GestionUsuarios() {
 
   const filteredUsers = useMemo(() => {
     return users.filter((u) => {
-      const matchSearch =
-        u.nombre.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        u.email.toLowerCase().includes(searchQuery.toLowerCase());
+      const nombre = (u.nombre_display || "").toLowerCase();
+      const matchSearch = nombre.includes(searchQuery.toLowerCase());
       const matchRol = filterRol === "todos" || u.rol === filterRol;
       const matchEstado =
         filterEstado === "todos" ||
@@ -1583,7 +1582,7 @@ function GestionUsuarios() {
     return ej ? ej.tipo : null;
   };
 
-  const existingEmails = users.map((u) => u.email?.toLowerCase() || "");
+  const existingNames = users.map((u) => (u.nombre_display || "").toLowerCase());
 
   if (loading) {
     return (
@@ -1770,7 +1769,7 @@ function GestionUsuarios() {
           <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 750 }}>
             <thead>
               <tr style={{ background: COLORS.dark }}>
-                {["Usuario", "Email", "Rol", "Ejecutivo asignado", "Estado", "Fecha registro", "Acciones"].map(
+                {["Usuario", "Rol", "Nivel", "Ejecutivo asignado", "Estado", "Fecha registro", "Acciones"].map(
                   (h) => (
                     <th
                       key={h}
@@ -1806,7 +1805,7 @@ function GestionUsuarios() {
                   const tipo = getEjecutivoTipo(user.ejecutivo_id);
                   return (
                     <tr
-                      key={user.id}
+                      key={user.user_id}
                       style={{
                         background: idx % 2 === 0 ? "#fff" : "#FAFBFA",
                         borderBottom: `1px solid ${COLORS.border}`,
@@ -1830,7 +1829,7 @@ function GestionUsuarios() {
                               flexShrink: 0,
                             }}
                           >
-                            {user.nombre
+                            {(user.nombre_display || "?")
                               .split(" ")
                               .slice(0, 2)
                               .map((w) => w[0])
@@ -1838,13 +1837,13 @@ function GestionUsuarios() {
                               .toUpperCase()}
                           </div>
                           <p style={{ fontSize: 13, fontWeight: 600, color: COLORS.text, margin: 0 }}>
-                            {user.nombre}
+                            {user.nombre_display || "Sin nombre"}
                           </p>
                         </div>
                       </td>
 
                       <td style={{ padding: "14px" }}>
-                        <p style={{ fontSize: 13, color: COLORS.textLight, margin: 0 }}>{user.email}</p>
+                        <p style={{ fontSize: 13, color: COLORS.textLight, margin: 0 }}>{user.rol}</p>
                       </td>
 
                       <td style={{ padding: "14px" }}>
@@ -1913,18 +1912,18 @@ function GestionUsuarios() {
 
                       <td style={{ padding: "14px" }}>
                         <p style={{ fontSize: 12, color: COLORS.textLight, margin: 0 }}>
-                          {new Date(user.fecha_creacion + "T12:00:00").toLocaleDateString("es-MX", {
+                          {user.created_at ? new Date(user.created_at).toLocaleDateString("es-MX", {
                             day: "numeric",
                             month: "short",
                             year: "numeric",
-                          })}
+                          }) : "—"}
                         </p>
                       </td>
 
                       <td style={{ padding: "14px" }}>
                         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                           <button
-                            onClick={() => handleToggleActive(user.id)}
+                            onClick={() => handleToggleActive(user.user_id)}
                             title={user.activo ? "Desactivar" : "Reactivar"}
                             style={{
                               padding: "6px 10px",
@@ -1940,7 +1939,7 @@ function GestionUsuarios() {
                             {user.activo ? "Desactivar" : "Reactivar"}
                           </button>
                           <button
-                            onClick={() => handleChangeRol(user.id)}
+                            onClick={() => handleChangeRol(user.user_id)}
                             title="Cambiar rol"
                             style={{
                               padding: "6px 10px",
@@ -1956,7 +1955,7 @@ function GestionUsuarios() {
                             Cambiar rol
                           </button>
                           <button
-                            onClick={() => handleResetPassword(user.id)}
+                            onClick={() => handleResetPassword(user.user_id)}
                             title="Resetear contraseña"
                             style={{
                               padding: "6px 10px",
