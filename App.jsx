@@ -1208,6 +1208,7 @@ function CreateUserModal({ onClose, onCreate, existingEmails, ejecutivos }) {
     onCreate({
       nombre: form.nombre.trim(),
       email: form.email.trim().toLowerCase(),
+      password: form.password,
       rol: form.rol,
       ejecutivo_id: form.rol === "ejecutivo" ? Number(form.ejecutivo_id) : null,
     });
