@@ -8,19 +8,30 @@ export function useExecutives({ mes, anio }) {
 
   const fetchEjecutivos = useCallback(async () => {
     setLoading(true);
-    const { data, error: err } = await supabase
-      .from("ejecutivos")
-      .select("*")
-      .eq("mes", mes)
-      .eq("anio", anio)
-      .order("id");
+    try {
+      const { data: ejData, error: ejErr } = await supabase
+        .from("ejecutivos")
+        .select("*")
+        .eq("mes", mes)
+        .eq("anio", anio)
+        .order("id");
 
-    if (err) {
+      if (ejErr) throw ejErr;
+
+      const { data: perfilesData, error: pErr } = await supabase
+        .from("perfiles")
+        .select("ejecutivo_id")
+        .not("ejecutivo_id", "is", null);
+
+      if (pErr) throw pErr;
+
+      const idsConCuenta = new Set((perfilesData || []).map((p) => p.ejecutivo_id));
+      const filtered = (ejData || []).filter((e) => idsConCuenta.has(e.id));
+      setEjecutivos(filtered);
+      setError(null);
+    } catch (err) {
       setError(err.message);
       console.error("Error al cargar ejecutivos:", err);
-    } else {
-      setEjecutivos(data || []);
-      setError(null);
     }
     setLoading(false);
   }, [mes, anio]);
@@ -29,7 +40,6 @@ export function useExecutives({ mes, anio }) {
     fetchEjecutivos();
   }, [fetchEjecutivos]);
 
-  // ─── Actualizar meta de un ejecutivo ───
   const updateMeta = async (ejecutivoId, newMeta) => {
     const { error: err } = await supabase
       .from("ejecutivos")
@@ -44,7 +54,6 @@ export function useExecutives({ mes, anio }) {
     return { success: true };
   };
 
-  // ─── Copiar metas del mes anterior ───
   const copyFromPreviousMonth = async () => {
     let prevMes = mes - 1;
     let prevAnio = anio;
@@ -63,7 +72,6 @@ export function useExecutives({ mes, anio }) {
     if (!prevData || prevData.length === 0)
       return { success: false, error: "No hay datos del mes anterior" };
 
-    // Insertar registros con el nuevo mes/año
     const newRecords = prevData.map(({ id, ...rest }) => ({
       ...rest,
       mes,
@@ -80,7 +88,6 @@ export function useExecutives({ mes, anio }) {
     return { success: true };
   };
 
-  // ─── Toggle activo/inactivo ───
   const toggleActivo = async (ejecutivoId, activo) => {
     const { error: err } = await supabase
       .from("ejecutivos")
@@ -95,7 +102,6 @@ export function useExecutives({ mes, anio }) {
     return { success: true };
   };
 
-  // ─── Separar nómina y motos ───
   const nominaEjecutivos = ejecutivos.filter((e) => e.tipo === "nómina" || e.tipo === "nomina");
   const motosEjecutivos = ejecutivos.filter((e) => e.tipo === "motos");
 
