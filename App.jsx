@@ -1463,17 +1463,40 @@ function GestionUsuarios() {
 
   const handleCreate = async (data) => {
     try {
-      const { error } = await supabase.from("perfiles").insert({
-        ...data,
+     const { data: sessionData } = await supabase.auth.getSession();
+      const adminSession = sessionData?.session;
+
+      const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: {
+          data: { nombre_display: data.nombre, rol: data.rol },
+        },
+      });
+
+      if (signUpErr) throw signUpErr;
+      if (!signUpData.user) throw new Error("No se pudo crear el usuario");
+
+      if (adminSession) {
+        await supabase.auth.setSession({
+          access_token: adminSession.access_token,
+          refresh_token: adminSession.refresh_token,
+        });
+      }
+
+      await supabase.from("perfiles").upsert({
+        user_id: signUpData.user.id,
         nombre_display: data.nombre,
+        rol: data.rol,
+        ejecutivo_id: data.ejecutivo_id || null,
         activo: true,
       });
-      if (error) throw error;
+
       setShowCreateModal(false);
       showToast(`Cuenta creada para ${data.nombre}`);
-      // Reload users
-      const { data: newUsers, error: err } = await supabase.from("perfiles").select("*").order("nombre_display");
-      if (!err) setUsers(newUsers);
+
+      const { data: newUsers } = await supabase.from("perfiles").select("*").order("nombre_display");
+      if (newUsers) setUsers(newUsers);
     } catch (err) {
       showToast(`Error al crear cuenta: ${err.message}`, "error");
     }
