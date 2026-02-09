@@ -5186,7 +5186,7 @@ function ExportExcel() {
       try {
         const { data, error } = await supabase
           .from("clientes")
-          .select("*, ejecutivos(nombre)")
+          .select("*")
           .eq("anio_registro", anio)
           .order("mes_registro");
 
@@ -5208,7 +5208,7 @@ function ExportExcel() {
       if (!grouped[c.mes_registro]) grouped[c.mes_registro] = [];
       grouped[c.mes_registro].push({
         ...c,
-        ejecutivo: c.ejecutivos?.nombre || c.ejecutivo || "—",
+        ejecutivo: c.ejecutivo || "—",
       });
     });
     return grouped;
